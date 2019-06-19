@@ -6,6 +6,7 @@ use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Block\BlockBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Session\AccountInterface;
+use Drupal\Core\Url;
 
 /**
  * Provides a block with a simple text.
@@ -20,9 +21,32 @@ class MyBlock extends BlockBase {
    * {@inheritdoc}
    */
   public function build() {
-    return [
-      '#markup' => $this->t('This is a simple block!'),
-    ];
+    $build = [];
+
+    // Get last 3 created content details.
+    $latest_content = $this->get_latest_content();
+
+    if (!empty($latest_content)) {
+      foreach ($latest_content as $node) {
+        // Generate link for each content.
+        $build[$node->nid] = [
+          '#type' => 'link',
+          '#title' => $node->title,
+          '#url' => Url::fromRoute('entity.node.canonical', ['node' => $node->nid]),
+          '#prefix' => '<div>',
+          '#suffix' => '</div>',
+        ];
+      }
+    }
+
+    if (!empty($build)) {
+      return $build;
+    }
+    else {
+      return [
+        '#markup' => $this->t('No content exists!'),
+      ];
+    }
   }
 
   /**
@@ -46,5 +70,13 @@ class MyBlock extends BlockBase {
    */
   public function blockSubmit($form, FormStateInterface $form_state) {
     $this->configuration['my_block_settings'] = $form_state->getValue('my_block_settings');
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function get_latest_content() {
+    $result = \Drupal::database()->query('SELECT nid, title from node_field_data ORDER BY nid DESC limit 0, 3');
+    return $result->fetchAll();
   }
 }
