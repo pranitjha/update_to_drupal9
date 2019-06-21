@@ -1,0 +1,3 @@
+services:
+  hello_world.service:
+    class: Drupal\hello_world\HelloWorldService
